@@ -5,8 +5,8 @@ from sqlalchemy.orm import sessionmaker
 import os
 import sys
 
-if "ROCKSET_SERVER" not in os.environ:
-    print("ROCKSET_SERVER environment variable not provided!")
+if "ROCKSET_API_SERVER" not in os.environ:
+    print("ROCKSET_API_SERVER environment variable not provided!")
     sys.exit(1)
 
 if "ROCKSET_API_KEY" not in os.environ:
@@ -16,7 +16,7 @@ if "ROCKSET_API_KEY" not in os.environ:
 engine = create_engine(
     "rockset_sqlalchemy://",
     connect_args={
-        "api_server": os.environ["ROCKSET_SERVER"],
+        "api_server": os.environ["ROCKSET_API_SERVER"],
         "api_key": os.environ["ROCKSET_API_KEY"],
     },
 )
