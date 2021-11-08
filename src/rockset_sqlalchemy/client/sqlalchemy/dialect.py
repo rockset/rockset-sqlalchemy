@@ -165,7 +165,7 @@ class RocksetDialect(default.DefaultDialect):
         table_name = self.identifier_preparer.quote_identifier(table_name)
 
         # Get a single row and determine the schema from that.
-        # This assumes the whole collection has a fixes schema of course.
+        # This assumes the whole collection has a fixed schema of course.
         q = "SELECT * FROM {}.{} LIMIT 1".format(schema, table_name)
         try:
             cursor = connection.connect().connection.cursor()
