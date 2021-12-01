@@ -1,11 +1,12 @@
-from sqlalchemy.engine import default
-from sqlalchemy import exc
-from sqlalchemy import types
-from sqlalchemy import util
-from sqlalchemy.engine import default, reflection
-from sqlalchemy.sql import compiler
+import json
+
 import rockset
 from rockset import Client
+from sqlalchemy import exc, types, util
+from sqlalchemy.engine import default, reflection
+from sqlalchemy.sql import compiler
+
+from .compiler import RocksetCompiler
 
 
 class BaseType:
@@ -124,7 +125,7 @@ class RocksetDialect(default.DefaultDialect):
     positional = False
     paramstyle = "named"
 
-    statement_compiler = compiler.SQLCompiler
+    statement_compiler = RocksetCompiler
     type_compiler = compiler.GenericTypeCompiler
     preparer = RocksetIdentifierPreparer
     default_schema_name = "commons"
@@ -230,3 +231,9 @@ class RocksetDialect(default.DefaultDialect):
 
     def _check_unicode_description(self, connection):
         return True
+
+    def _json_deserializer(self, j):
+        return j
+
+    def _json_serializer(self, j):
+        return j

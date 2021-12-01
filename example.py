@@ -1,9 +1,12 @@
-import sqlalchemy as sa
-from sqlalchemy import create_engine, func
-from sqlalchemy.ext import declarative
-from sqlalchemy.orm import sessionmaker
+import json
 import os
 import sys
+from collections import defaultdict
+
+import sqlalchemy as sa
+from sqlalchemy import create_engine, func, or_
+from sqlalchemy.ext import declarative
+from sqlalchemy.orm import Query, sessionmaker
 
 if "ROCKSET_API_SERVER" not in os.environ:
     print("ROCKSET_API_SERVER environment variable not provided!")
@@ -24,42 +27,123 @@ engine = create_engine(
 Base = declarative.declarative_base(bind=engine)
 
 
-class User(Base):
-    __tablename__ = "users"
+class Person(Base):
+    __tablename__ = "people"
 
     _id = sa.Column(sa.String, primary_key=True)
-    first_name = sa.Column(sa.String)
-    age = sa.Column(sa.Integer)
+    name = sa.Column()
+    info = sa.Column(sa.JSON)
 
     def __repr__(self):
-        return f"User(_id={self._id}, first_name={self.first_name}, age={self.age})"
+        return f"Person(_id={self._id}, info={self.info}, name={self.name})"
 
 
-class Purchase(Base):
-    __tablename__ = "purchases"
+"""
+INSERT INTO people
+SELECT
+    'Joe' name,
+    JSON_PARSE(
+        '{"friends": ["Jack", "Jill"], "favorites": {"lunch": "Sweetgreen", "snack": "Peanut butter cups"}}'
+    ) info
+UNION ALL
+SELECT
+    'Jack' name,
+    JSON_PARSE(
+        '{"friends": ["Mike"], "favorites": {"lunch": "Chipotle", "language": "Python"}}'
+    ) info
+UNION ALL
+SELECT
+    'Jill' name,
+    JSON_PARSE(
+        '{"friends": ["Joe"], "favorites": {"lunch": "Sweetgreen", "language": "C++", "snack": "Pickles"}}'
+    ) info
+UNION ALL
+SELECT
+    'Mike' name,
+    JSON_PARSE(
+        '{"friends": ["Jill"], "favorites": {"lunch": "Subway", "music": "Pop"}}'
+    ) info
+"""
 
-    _id = sa.Column(sa.String, primary_key=True)
-    user_id = sa.Column(sa.String)
-    product = sa.Column(sa.String)
-    cost = sa.Column(sa.Float)
+if __name__ == "__main__":
+    session = sessionmaker(bind=engine)()
 
-    def __repr__(self):
-        return f"Purchase(_id={self._id}, user_id={self.user_id}, product={self.product}, cost={self.cost})"
+    q = session.query(Person.info.op("#>")("friends").op("->>")(1))
+    results = set(t[0] for t in q.all())
+    assert results == set(["Jack", "Mike", "Joe", "Jill"])
 
+    q = session.query(Person.info.op("#>")("friends"))
+    results = q.all()
+    d = defaultdict(lambda: 0)
+    for r in results:
+        for n in r[0]:
+            d[n] = d[n] + 1
+    assert dict(d) == {"Jill": 2, "Joe": 1, "Mike": 1, "Jack": 1}
 
-session = sessionmaker(bind=engine)()
-cte = (
-    sa.select(
-        Purchase.user_id.label("user"),
-        func.array_agg(Purchase.product).label("products"),
-        func.sum(Purchase.cost).label("total_cost"),
+    q = session.query(Person.name, Person.info["favorites"])
+    results = q.all()
+    d = {}
+    for r in results:
+        name = r[0]
+        favs = r[1]
+        d[name] = favs
+    assert dict(d) == {
+        "Jill": {"language": "C++", "lunch": "Sweetgreen", "snack": "Pickles"},
+        "Mike": {"music": "Pop", "lunch": "Subway"},
+        "Joe": {"lunch": "Sweetgreen", "snack": "Peanut butter cups"},
+        "Jack": {"lunch": "Chipotle", "language": "Python"},
+    }
+
+    q = session.query(Person.name, Person.info["favorites"]["snack"])
+    results = q.all()
+    d = {}
+    for r in results:
+        name = r[0]
+        snack = r[1]
+        d[name] = snack
+    assert dict(d) == {
+        "Joe": "Peanut butter cups",
+        "Mike": None,
+        "Jill": "Pickles",
+        "Jack": None,
+    }
+
+    # Similar to the query just above, except we subscript using a list.
+    q = session.query(Person.name, Person.info[["favorites", "snack"]])
+    results = q.all()
+    d = {}
+    for r in results:
+        name = r[0]
+        snack = r[1]
+        d[name] = snack
+    assert dict(d) == {
+        "Joe": "Peanut butter cups",
+        "Mike": None,
+        "Jill": "Pickles",
+        "Jack": None,
+    }
+
+    q = session.query(Person.name).where(
+        Person.info["favorites"]["lunch"] == "Sweetgreen"
     )
-    .group_by(Purchase.user_id)
-    .cte("user_to_products")
-)
-results = session.query(User, cte).join(cte, sa.and_(cte.c.user == User._id)).all()
-if len(results) > 0:
-    for row in results:
-        print(row)
-else:
-    print("No results!")
+    results = set(t[0] for t in q.all())
+    assert results == set(["Joe", "Jill"])
+
+    q = session.query(Person.name).where(
+        Person.info[["favorites", "lunch"]] == "Sweetgreen"
+    )
+    results = set(t[0] for t in q.all())
+    assert results == set(["Joe", "Jill"])
+
+    q = session.query(Person.name).filter(Person.info[["favorites", "music"]] != None)
+    results = set(t[0] for t in q.all())
+    assert results == set(["Mike"])
+
+    q = session.query(Person.name).filter(
+        or_(
+            Person.info[["favorites", "music"]] != None,
+            Person.info["friends"][1] == "Jack",
+        )
+    )
+    results = set(t[0] for t in q.all())
+    assert results == set(["Mike", "Joe"])

@@ -1,6 +1,9 @@
-from .exceptions import Error, ProgrammingError
+import json
+
 import rockset
 from rockset.query import QueryStringSQLText
+
+from .exceptions import Error, ProgrammingError
 
 
 class Cursor(object):
@@ -92,6 +95,13 @@ class Cursor(object):
 
     def __iter__(self):
         return self
+
+    def __next__(self):
+        next_doc = self.fetchone()
+        if next_doc is None:
+            raise StopIteration
+        else:
+            return next_doc
 
     next = __next__
 

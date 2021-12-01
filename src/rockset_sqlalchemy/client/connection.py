@@ -1,7 +1,8 @@
-from .cursor import Cursor
-from .exceptions import Error, ProgrammingError
 import rockset
 from rockset import Client, Q
+
+from .cursor import Cursor
+from .exceptions import Error, ProgrammingError
 
 
 class Connection(object):
