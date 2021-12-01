@@ -16,6 +16,15 @@ class Cursor(object):
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
 
+        # Serialize all list parameters to strings.
+        new_params = {}
+        for k, v in parameters.items():
+            if isinstance(v, list):
+                new_params[k] = json.dumps(v)
+            else:
+                new_params[k] = v
+        parameters = new_params
+
         q = QueryStringSQLText(sql)
         if parameters:
             if not isinstance(parameters, dict):
