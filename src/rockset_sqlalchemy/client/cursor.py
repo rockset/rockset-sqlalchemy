@@ -25,6 +25,12 @@ class Cursor(object):
                 new_params[k] = v
         parameters = new_params
 
+        if self._connection.debug_sql:
+          print("+++++++++++++++++++++++++++++")
+          print(f"Query:\n{sql}")
+          print(f"\nParameters:\n{new_params}")
+          print("+++++++++++++++++++++++++++++")
+
         q = QueryStringSQLText(sql)
         if parameters:
             if not isinstance(parameters, dict):

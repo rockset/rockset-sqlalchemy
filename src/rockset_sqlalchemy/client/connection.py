@@ -6,9 +6,10 @@ from .exceptions import Error, ProgrammingError
 
 
 class Connection(object):
-    def __init__(self, api_server, api_key):
+    def __init__(self, api_server, api_key, debug_sql=False):
         self._closed = False
         self._client = Client(api_server=api_server, api_key=api_key)
+        self.debug_sql = debug_sql
 
         # Used for testing connectivity to Rockset.
         try:
