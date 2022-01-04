@@ -40,3 +40,6 @@ class RocksetCompiler(compiler.SQLCompiler):
         # field in a JSON, because some level of a JSON can be a non-object, which would then lead
         # to a runtime error.
         return self.process(func.TRY(func.ELEMENT_AT(b.left, right)))
+
+    def get_from_hint_text(self, table, text):
+        return text

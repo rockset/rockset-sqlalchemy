@@ -26,10 +26,10 @@ class Cursor(object):
         parameters = new_params
 
         if self._connection.debug_sql:
-          print("+++++++++++++++++++++++++++++")
-          print(f"Query:\n{sql}")
-          print(f"\nParameters:\n{new_params}")
-          print("+++++++++++++++++++++++++++++")
+            print("+++++++++++++++++++++++++++++")
+            print(f"Query:\n{sql}")
+            print(f"\nParameters:\n{new_params}")
+            print("+++++++++++++++++++++++++++++")
 
         q = QueryStringSQLText(sql)
         if parameters:
