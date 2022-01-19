@@ -4,9 +4,11 @@ import sys
 from collections import defaultdict
 
 import sqlalchemy as sa
-from sqlalchemy import create_engine, func, or_
+from sqlalchemy import cast, create_engine, func, or_
 from sqlalchemy.ext import declarative
 from sqlalchemy.orm import Query, sessionmaker
+
+from rockset_sqlalchemy.client.sqlalchemy.types import Array
 
 if "ROCKSET_API_SERVER" not in os.environ:
     print("ROCKSET_API_SERVER environment variable not provided!")
@@ -67,6 +69,12 @@ SELECT
 
 if __name__ == "__main__":
     session = sessionmaker(bind=engine)()
+
+    q = session.query(Person.info["friends"]).where(Person.name == "Joe")
+    results = q.all()[0][0]
+    assert len(results) == 2
+    assert type(results) == list
+    assert results == ["Jack", "Jill"]
 
     q = session.query(Person.info.op("#>")("friends").op("->>")(1))
     results = set(t[0] for t in q.all())

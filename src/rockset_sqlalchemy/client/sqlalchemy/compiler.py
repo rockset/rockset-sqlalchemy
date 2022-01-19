@@ -6,8 +6,17 @@ from sqlalchemy.sql import compiler
 from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql.operators import custom_op, json_getitem_op, json_path_getitem_op
 
+from .types import Array
+
 
 class RocksetCompiler(compiler.SQLCompiler):
+    def visit_cast(self, cast, **kw):
+        if type(cast.type) == Array:
+            return "CAST({} AS array)".format(self.process(cast.clause, **kw))
+        return "CAST({} AS {})".format(
+            self.process(cast.clause, **kw), self.process(cast.typeclause)
+        )
+
     def visit_binary(self, b, **kw):
         if isinstance(b.operator, custom_op):
             return self._handle_custom_op(b)
