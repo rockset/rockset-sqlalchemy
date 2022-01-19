@@ -70,7 +70,7 @@ SELECT
 if __name__ == "__main__":
     session = sessionmaker(bind=engine)()
 
-    q = session.query(Person.info["friends"]).where(Person.name == "Joe")
+    q = session.query(cast(Person.info["friends"], Array)).where(Person.name == "Joe")
     results = q.all()[0][0]
     assert len(results) == 2
     assert type(results) == list
