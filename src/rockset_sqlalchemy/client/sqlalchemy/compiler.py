@@ -11,7 +11,7 @@ from .types import Array
 
 class RocksetCompiler(compiler.SQLCompiler):
     def visit_cast(self, cast, **kw):
-        if type(cast.type) == Array:
+        if isinstance(cast.type, Array):
             return "CAST({} AS array)".format(self.process(cast.clause, **kw))
         return "CAST({} AS {})".format(
             self.process(cast.clause, **kw), self.process(cast.typeclause)
