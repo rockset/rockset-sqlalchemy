@@ -17,6 +17,7 @@ class Cursor(object):
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
 
+        # Serialize all list parameters to strings.
         new_params = {}
         for k, v in parameters.items():
             if isinstance(v, list):
@@ -39,12 +40,15 @@ class Cursor(object):
                     )
                 )
 
-        self._response = self._connection._client.sql(
-            query=sql,
-            params=parameters
-        )
-        
-        self._response_iter = iter(self._response.results)
+        try:
+            self._response = self._connection._client.sql(
+                query=sql,
+                params=parameters
+            )
+            
+            self._response_iter = iter(self._response.results)
+        except rockset.exceptions.RocksetException as e:
+            raise Error.map_rockset_exception(e)
 
     def executemany(self, sql, all_parameters):
         for parameters in all_parameters:
