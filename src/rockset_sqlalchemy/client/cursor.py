@@ -1,7 +1,7 @@
+import sys
 import json
 
 import rockset
-from rockset.query import QueryStringSQLText
 
 from .exceptions import Error, ProgrammingError
 
@@ -10,13 +10,13 @@ class Cursor(object):
     def __init__(self, connection):
         self._connection = connection
         self._closed = False
-        self._cursor = None
         self.arraysize = 1
+        self._response = None
+        self._response_iter = None
 
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
 
-        # Serialize all list parameters to strings.
         new_params = {}
         for k, v in parameters.items():
             if isinstance(v, list):
@@ -24,14 +24,13 @@ class Cursor(object):
             else:
                 new_params[k] = v
         parameters = new_params
-
+        
         if self._connection.debug_sql:
             print("+++++++++++++++++++++++++++++")
             print(f"Query:\n{sql}")
-            print(f"\nParameters:\n{new_params}")
+            print(f"\nParameters:\n{parameters}")
             print("+++++++++++++++++++++++++++++")
 
-        q = QueryStringSQLText(sql)
         if parameters:
             if not isinstance(parameters, dict):
                 raise ProgrammingError(
@@ -39,13 +38,13 @@ class Cursor(object):
                         type(parameters)
                     )
                 )
-            q.P.update(parameters)
 
-        try:
-            self._cursor = self._connection._client.sql(q=q)
-            self._cursor_iter = iter(self._cursor.results())
-        except rockset.exception.Error as e:
-            raise Error.map_rockset_exception(e)
+        self._response = self._connection._client.sql(
+            query=sql,
+            params=parameters
+        )
+        
+        self._response_iter = iter(self._response.results)
 
     def executemany(self, sql, all_parameters):
         for parameters in all_parameters:
@@ -55,17 +54,18 @@ class Cursor(object):
         self.__check_cursor_opened()
 
         try:
-            next_doc = next(self._cursor_iter)
+            next_doc = next(self._response_iter)
         except StopIteration:
             return None
-        except rockset.exception.Error as e:
+        except rockset.exceptions.RocksetException as e:
             raise Error.map_rockset_exception(e)
 
         if not next_doc:
             return None
 
         result = []
-        for field in self._cursor.fields():
+        
+        for field in self._response_to_column_fields(self._response.column_fields):           
             name = field["name"]
             if name in next_doc:
                 result.append(next_doc[name])
@@ -73,6 +73,21 @@ class Cursor(object):
                 result.append(None)
 
         return tuple(result)
+
+    def _response_to_column_fields(self, column_fields):
+        if column_fields:
+            columns = [cf["name"] for cf in column_fields]
+
+        schema = rockset.Document()
+        for r in self._get_docs(self._response):
+            schema.update(r)
+
+        return schema.fields(columns=columns)
+
+    def _get_docs(self, response):
+        if not response.results:
+            return []
+        return [rockset.Document(row) for row in response.results]
 
     def fetchall(self):
         docs = []
@@ -96,11 +111,11 @@ class Cursor(object):
 
     @property
     def description(self):
-        if self._cursor is None:
+        if self._response is None:
             return None
 
         desc = []
-        for field in self._cursor.fields():
+        for field in self._response_to_column_fields(self._response.column_fields):
             name, type_ = field["name"], field["type"]
             null_ok = name != "_id" and "__id" not in name
 
@@ -127,7 +142,7 @@ class Cursor(object):
     @property
     def rowcount(self):
         self.__check_cursor_opened()
-        return self._cursor.rowcount()
+        return len(self._response.results)
 
     def __check_cursor_opened(self):
         if self._connection._closed:

@@ -1,5 +1,5 @@
 import rockset
-from rockset import Client, Q
+from rockset import RocksetClient, Regions
 
 from .cursor import Cursor
 from .exceptions import Error, ProgrammingError
@@ -8,14 +8,17 @@ from .exceptions import Error, ProgrammingError
 class Connection(object):
     def __init__(self, api_server, api_key, debug_sql=False):
         self._closed = False
-        self._client = Client(api_server=api_server, api_key=api_key)
+        self._client = RocksetClient(
+            host=api_server or Regions.use1a1, 
+            api_key=api_key
+        )
         self.debug_sql = debug_sql
-
         # Used for testing connectivity to Rockset.
         try:
-            cursor = self._client.sql(Q("SELECT 1"))
-            cursor.results()
-        except rockset.exception.Error as e:
+            self._client.Queries.query(
+                sql={ "query": "SELECT 1" }
+            ).results
+        except rockset.exceptions.RocksetException as e:
             raise Error.map_rockset_exception(e)
 
     def cursor(self):
