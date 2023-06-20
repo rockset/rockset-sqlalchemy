@@ -79,19 +79,19 @@ class Cursor(object):
         return tuple(result)
 
     def _response_to_column_fields(self, column_fields):
+        # find the data type of each column by looking at
+        # the result set.
         if column_fields:
             columns = [cf["name"] for cf in column_fields]
 
         schema = rockset.Document()
-        for r in self._get_docs(self._response):
-            schema.update(r)
+        if self._response.results and len(self._response.results) > 0:
+            # we only look at the first document because 
+            # is sqlalchemy is typically used for relational
+            # tables with no sparse fields
+            schema.update(self._response.results[0])
 
         return schema.fields(columns=columns)
-
-    def _get_docs(self, response):
-        if not response.results:
-            return []
-        return [rockset.Document(row) for row in response.results]
 
     def fetchall(self):
         docs = []
