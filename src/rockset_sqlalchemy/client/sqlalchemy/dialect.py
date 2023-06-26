@@ -1,7 +1,5 @@
 import json
 
-import rockset
-from rockset import Client
 from sqlalchemy import exc, types, util
 from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler

@@ -11,4 +11,8 @@ setup(
         ]
     },
     extras_require=dict(sqlalchemy=["sqlalchemy>=1.0,<1.4", "geojson>=2.5.0"]),
+    install_requires=[
+        "rockset>=1.0.0",
+        "sqlalchemy>=1.4.0,<2.0.0"
+    ],
 )

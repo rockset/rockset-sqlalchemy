@@ -1,30 +1,37 @@
 import rockset
+from json import loads
 
-
-class Error(rockset.exception.Error):
+class Error(rockset.exceptions.RocksetException):
     @classmethod
-    def map_rockset_exception(cls, exc, **kwargs):
-        kwargs["message"] = exc.message
-        kwargs["code"] = hasattr(exc, "code") and exc.code or None
-        kwargs["type"] = hasattr(exc, "type") and exc.type or None
-        if type(exc) == rockset.exception.ServerError:
-            ret = InternalError(**kwargs)
-        elif type(exc) == rockset.exception.NotYetImplemented:
-            ret = NotSupportedError(**kwargs)
-        elif type(exc) == rockset.exception.AuthError:
-            ret = OperationalError(**kwargs)
-        elif type(exc) == rockset.exception.LimitReached:
-            ret = OperationalError(**kwargs)
-        elif type(exc) == rockset.exception.ResourceSuspendedError:
-            ret = OperationalError(**kwargs)
-        elif type(exc) == rockset.exception.RequestTimeout:
-            ret = OperationalError(**kwargs)
-        elif type(exc) == rockset.exception.TransientServerError:
-            ret = OperationalError(**kwargs)
-        elif type(exc) == rockset.exception.InputError:
-            ret = ProgrammingError(**kwargs)
+    def map_rockset_exception(cls, exc):
+        err_body = loads(exc.body)
+        args = [
+            err_body["message"],
+            exc.status,
+            err_body["type"]
+        ]
+        exc_type = type(exc)
+        if (
+            exc_type == rockset.exceptions.ApiTypeError or
+            exc_type == rockset.exceptions.ApiValueError or
+            exc_type == rockset.exceptions.ApiAttributeError or
+            exc_type == rockset.exceptions.ApiKeyError or 
+            exc_type == rockset.exceptions.NotFoundException or
+            exc_type == rockset.exceptions.InputException or  
+            exc_type == rockset.exceptions.InitializationException or
+            exc_type == rockset.exceptions.BadRequestException
+
+        ):
+            ret = ProgrammingError(*args)
+        elif (
+            exc_type == rockset.exceptions.UnauthorizedException or 
+            exc_type == rockset.exceptions.ForbiddenException
+        ):
+            ret = OperationalError(*args)
+        elif exc_type == ServiceException:
+            ret = InternalError(*args)
         else:
-            ret = cls(**kwargs)
+            ret = cls(*args)
         return ret
 
 
