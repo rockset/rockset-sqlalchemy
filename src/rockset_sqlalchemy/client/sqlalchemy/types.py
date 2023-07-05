@@ -54,7 +54,7 @@ class Time(BaseType, types.TIME):
     __visit_name__ = rockset.document.DATATYPE_TIME
 
 
-class Time(BaseType, types.String):
+class Timestamp(BaseType, types.String):
     __visit_name__ = rockset.document.DATATYPE_TIMESTAMP
 
 
@@ -83,18 +83,19 @@ class Geography(Object):
 
 
 type_map = {
-    rockset.document.DATATYPE_NULL: NullType,
-    rockset.document.DATATYPE_INT: Int,
-    rockset.document.DATATYPE_FLOAT: Float,
-    rockset.document.DATATYPE_BOOL: Bool,
-    rockset.document.DATATYPE_STRING: String,
-    rockset.document.DATATYPE_BYTES: Bytes,
-    rockset.document.DATATYPE_OBJECT: Object,
-    rockset.document.DATATYPE_ARRAY: Array,
-    rockset.document.DATATYPE_DATE: Date,
-    rockset.document.DATATYPE_DATETIME: DateTime,
-    rockset.document.DATATYPE_TIME: Time,
-    rockset.document.DATATYPE_MICROSECOND_INTERVAL: MicrosecondInterval,
-    rockset.document.DATATYPE_MONTH_INTERVAL: MonthInterval,
-    rockset.document.DATATYPE_GEOGRAPHY: Geography,
+    "null": NullType,
+    "int": Int,
+    "float": Float,
+    "bool": Bool,
+    "string": String,
+    "bytes": Bytes,
+    "object": Object,
+    "array": Array,
+    "date": Date,
+    "datetime": DateTime,
+    "time": Time,
+    "timestamp": Timestamp,
+    "microsecond_interval": MicrosecondInterval,
+    "month_interval": MonthInterval,
+    "geography": Geography,
 }

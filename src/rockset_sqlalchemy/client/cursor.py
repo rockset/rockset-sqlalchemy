@@ -19,11 +19,12 @@ class Cursor(object):
 
         # Serialize all list parameters to strings.
         new_params = {}
-        for k, v in parameters.items():
-            if isinstance(v, list):
-                new_params[k] = json.dumps(v)
-            else:
-                new_params[k] = v
+        if parameters:
+            for k, v in parameters.items():
+                if isinstance(v, list):
+                    new_params[k] = json.dumps(v)
+                else:
+                    new_params[k] = v
         parameters = new_params
         
         if self._connection.debug_sql:
@@ -112,20 +113,36 @@ class Cursor(object):
                 break
             docs.append(doc)
         return docs
+        
 
     @property
     def description(self):
+        # if no query has been executed, return None
         if self._response is None:
             return None
 
-        desc = []
-        for field in self._response_to_column_fields(self._response.column_fields):
-            name, type_ = field["name"], field["type"]
-            null_ok = name != "_id" and "__id" not in name
+        if hasattr(self._response, "column_fields"): # the query was a DESCRIBE call
+            desc = []
+            for field in self._response_to_column_fields(self._response.column_fields):
+                name, type_ = field["name"], field["type"]
+                null_ok = name != "_id" and "__id" not in name
 
-            # name, type_code, display_size, internal_size, precision, scale, null_ok
-            desc.append((name, type_, None, None, None, None, null_ok))
-        return desc
+                # name, type_code, display_size, internal_size, precision, scale, null_ok
+                desc.append((name, type_, None, None, None, None, null_ok))
+            return desc
+        # the query was a SELECT call
+        fields = {}
+        for field in self._response.results:
+            field_name = field["field"][0]
+            if len(field["field"]) == 1 and (field_name not in fields.keys() or fields[field_name][1] is None):
+                    # name, type_code, display_size, internal_size, precision, scale, null_ok
+                    fields[field_name] = (
+                        field_name, 
+                        field["type"], 
+                        None, None, None, None, 
+                        field_name != "_id" and "__id" not in field_name
+                    )
+        return fields.values()
 
     def __iter__(self):
         return self

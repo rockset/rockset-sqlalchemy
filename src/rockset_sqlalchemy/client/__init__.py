@@ -1,7 +1,7 @@
 from .connection import Connection as connect
 from .exceptions import Error
 
-__all__ = [connect, Error]
+__all__ = ["connect", "Error"]
 
 apilevel = "2.0"
 
