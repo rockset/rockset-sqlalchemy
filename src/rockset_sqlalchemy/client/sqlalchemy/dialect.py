@@ -66,7 +66,7 @@ class RocksetDialect(default.DefaultDialect):
 
         # Get a single row and determine the schema from that.
         # This assumes the whole collection has a fixed schema of course.
-        q = f"DESCRIBE {schema}.{table_name}"
+        q = f"SELECT * FROM {schema}.{table_name} LIMIT 1"
         try:
             cursor = connection.connect().connection.cursor()
             cursor.execute(q)

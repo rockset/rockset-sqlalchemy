@@ -1,3 +1,4 @@
+from datetime import datetime, date
 import sys
 import json
 
@@ -13,6 +14,27 @@ class Cursor(object):
         self.arraysize = 1
         self._response = None
         self._response_iter = None
+
+    @staticmethod
+    def _convert_to_rockset_type(v):
+        if isinstance(v, bool):
+            return "bool"
+        elif isinstance(v, int):
+            return "int"
+        elif isinstance(v, float):
+            return "float"
+        elif isinstance(v, str):
+            return "string"
+        # this check needs to be first because `date` is also a `datetime`
+        elif isinstance(v, datetime):
+            return "datetime"
+        elif isinstance(v, date):
+            return "date"
+        elif isinstance(v, dict) or isinstance(v, list):
+            return "object"
+        raise TypeError(
+            "Parameter value of type {} is not supported by Rockset".format(type(v))
+        )
 
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
@@ -117,32 +139,17 @@ class Cursor(object):
 
     @property
     def description(self):
-        # if no query has been executed, return None
         if self._response is None:
             return None
 
-        if hasattr(self._response, "column_fields"): # the query was a DESCRIBE call
-            desc = []
-            for field in self._response_to_column_fields(self._response.column_fields):
-                name, type_ = field["name"], field["type"]
-                null_ok = name != "_id" and "__id" not in name
+        desc = []
+        for field_name, field_value in self._response.results[0].items():
+            name, type_ = field_name, Cursor._convert_to_rockset_type(field_value)
+            null_ok = name != "_id" and "__id" not in name
 
-                # name, type_code, display_size, internal_size, precision, scale, null_ok
-                desc.append((name, type_, None, None, None, None, null_ok))
-            return desc
-        # the query was a SELECT call
-        fields = {}
-        for field in self._response.results:
-            field_name = field["field"][0]
-            if len(field["field"]) == 1 and (field_name not in fields.keys() or fields[field_name][1] is None):
-                    # name, type_code, display_size, internal_size, precision, scale, null_ok
-                    fields[field_name] = (
-                        field_name, 
-                        field["type"], 
-                        None, None, None, None, 
-                        field_name != "_id" and "__id" not in field_name
-                    )
-        return fields.values()
+            # name, type_code, display_size, internal_size, precision, scale, null_ok
+            desc.append((name, type_, None, None, None, None, null_ok))
+        return desc
 
     def __iter__(self):
         return self
