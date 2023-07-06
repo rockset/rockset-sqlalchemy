@@ -4,13 +4,12 @@ from rockset import RocksetClient, Regions
 from .cursor import Cursor
 from .exceptions import Error, ProgrammingError
 
-
 class Connection(object):
-    def __init__(self, host, username, debug_sql=False):
+    def __init__(self, api_server, api_key, debug_sql=False):
         self._closed = False
         self._client = RocksetClient(
-            host=host or Regions.use1a1, 
-            api_key=username
+            host=api_server, 
+            api_key=api_key
         )
         self.debug_sql = debug_sql
         # Used for testing connectivity to Rockset.

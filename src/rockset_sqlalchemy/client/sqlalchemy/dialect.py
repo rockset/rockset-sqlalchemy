@@ -48,6 +48,13 @@ class RocksetDialect(default.DefaultDialect):
 
         return client
 
+    def create_connect_args(self, url):
+        kwargs = {
+            "api_server": "https://{}".format(url.host),
+            "api_key": url.password or url.username
+        }
+        return ([], kwargs)
+
     @reflection.cache
     def get_schema_names(self, connection, **kw):
         return [w["name"] for w in connection.connect().connection._client.Workspaces.list()["data"]]
