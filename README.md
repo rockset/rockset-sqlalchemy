@@ -1,7 +1,11 @@
-# rockset_sqlalchemy
-This repo implements Python's dbapi spec and provides SQLAlchemy support on top of Rockset.
+## rockset-sqlalchemy
+This library implements Python's dbapi spec and provides SQLAlchemy support on top of Rockset.
 
-# Development
+## Installation
+
+    pip3 install rockset-sqlalchemy
+
+## Development
 Iterating on this library is very simple.
 
 All you need to do is run `sudo python3 setup.py develop` and hack away.

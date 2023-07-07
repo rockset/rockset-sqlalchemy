@@ -1,8 +1,7 @@
-import rockset
-from rockset import RocksetClient, Regions
+from rockset import RocksetClient
 
 from .cursor import Cursor
-from .exceptions import Error, ProgrammingError
+from .exceptions import ProgrammingError
 
 class Connection(object):
     def __init__(self, api_server, api_key, virtual_instance=None, debug_sql=False):

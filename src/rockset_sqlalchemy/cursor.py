@@ -1,5 +1,4 @@
 from datetime import datetime, date
-import sys
 import json
 
 import rockset

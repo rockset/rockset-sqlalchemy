@@ -1,14 +1,13 @@
-import json
 import os
 import sys
 from collections import defaultdict
 
 import sqlalchemy as sa
-from sqlalchemy import cast, create_engine, func, or_
+from sqlalchemy import cast, create_engine, or_
 from sqlalchemy.ext import declarative
-from sqlalchemy.orm import Query, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
-from rockset_sqlalchemy.client.sqlalchemy.types import Array
+from rockset_sqlalchemy.sqlalchemy.types import Array
 
 if "ROCKSET_API_SERVER" not in os.environ:
     print("ROCKSET_API_SERVER environment variable not provided!")
