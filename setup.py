@@ -7,8 +7,8 @@ setup(
     packages=find_packages("src"),
     entry_points={
         "sqlalchemy.dialects": [
-            "rockset_sqlalchemy = rockset_sqlalchemy.client.sqlalchemy:RocksetDialect",
-            "rockset = rockset_sqlalchemy.client.sqlalchemy:RocksetDialect"
+            "rockset_sqlalchemy = rockset_sqlalchemy.sqlalchemy:RocksetDialect",
+            "rockset = rockset_sqlalchemy.sqlalchemy:RocksetDialect"
         ]
     },
     install_requires=[
