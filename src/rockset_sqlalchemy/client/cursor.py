@@ -16,7 +16,7 @@ class Cursor(object):
         self._response_iter = None
 
     @staticmethod
-    def _convert_to_rockset_type(v):
+    def __convert_to_rockset_type(v):
         if isinstance(v, bool):
             return "bool"
         elif isinstance(v, int):
@@ -32,6 +32,8 @@ class Cursor(object):
             return "date"
         elif isinstance(v, dict) or isinstance(v, list):
             return "object"
+        elif v is None:
+            return "null"
         raise TypeError(
             "Parameter value of type {} is not supported by Rockset".format(type(v))
         )
@@ -144,7 +146,7 @@ class Cursor(object):
 
         desc = []
         for field_name, field_value in self._response.results[0].items():
-            name, type_ = field_name, Cursor._convert_to_rockset_type(field_value)
+            name, type_ = field_name, Cursor.__convert_to_rockset_type(field_value)
             null_ok = name != "_id" and "__id" not in name
 
             # name, type_code, display_size, internal_size, precision, scale, null_ok
