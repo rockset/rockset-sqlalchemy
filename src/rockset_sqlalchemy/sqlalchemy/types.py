@@ -1,5 +1,5 @@
 import rockset
-from sqlalchemy import exc, types, util
+from sqlalchemy import types
 
 
 class BaseType:

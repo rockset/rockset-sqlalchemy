@@ -1,24 +1,19 @@
-import rockset
-from rockset import RocksetClient, Regions
+from rockset import RocksetClient
 
 from .cursor import Cursor
-from .exceptions import Error, ProgrammingError
+from .exceptions import ProgrammingError
 
 class Connection(object):
-    def __init__(self, api_server, api_key, debug_sql=False):
+    def __init__(self, api_server, api_key, virtual_instance=None, debug_sql=False):
         self._closed = False
         self._client = RocksetClient(
             host=api_server, 
             api_key=api_key
         )
+        self.vi = virtual_instance
         self.debug_sql = debug_sql
         # Used for testing connectivity to Rockset.
-        try:
-            self._client.Queries.query(
-                sql={ "query": "SELECT 1" }
-            ).results
-        except rockset.exceptions.RocksetException as e:
-            raise Error.map_rockset_exception(e)
+        Cursor.execute_query(self._client, "SELECT 1", vi=self.vi)
 
     def cursor(self):
         if not self._closed:

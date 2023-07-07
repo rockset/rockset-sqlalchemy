@@ -1,5 +1,3 @@
-import json
-
 from sqlalchemy import exc, types, util
 from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
@@ -44,14 +42,15 @@ class RocksetDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        from rockset_sqlalchemy import client
+        import rockset_sqlalchemy
 
-        return client
+        return rockset_sqlalchemy
 
     def create_connect_args(self, url):
         kwargs = {
             "api_server": "https://{}".format(url.host),
-            "api_key": url.password or url.username
+            "api_key": url.password or url.username,
+            "virtual_instance": url.database
         }
         return ([], kwargs)
 

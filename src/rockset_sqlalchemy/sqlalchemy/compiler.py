@@ -1,9 +1,6 @@
-from traceback import print_exc
-
 import sqlalchemy as sa
 from sqlalchemy import func
 from sqlalchemy.sql import compiler
-from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql.operators import custom_op, json_getitem_op, json_path_getitem_op
 
 from .types import Array
