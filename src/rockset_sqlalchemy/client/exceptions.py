@@ -28,7 +28,7 @@ class Error(rockset.exceptions.RocksetException):
             exc_type == rockset.exceptions.ForbiddenException
         ):
             ret = OperationalError(*args)
-        elif exc_type == ServiceException:
+        elif exc_type == rockset.exceptions.ServiceException:
             ret = InternalError(*args)
         else:
             ret = cls(*args)

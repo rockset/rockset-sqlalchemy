@@ -1,3 +1,4 @@
+from datetime import datetime, date
 import sys
 import json
 
@@ -14,16 +15,40 @@ class Cursor(object):
         self._response = None
         self._response_iter = None
 
+    @staticmethod
+    def __convert_to_rockset_type(v):
+        if isinstance(v, bool):
+            return "bool"
+        elif isinstance(v, int):
+            return "int"
+        elif isinstance(v, float):
+            return "float"
+        elif isinstance(v, str):
+            return "string"
+        # this check needs to be first because `date` is also a `datetime`
+        elif isinstance(v, datetime):
+            return "datetime"
+        elif isinstance(v, date):
+            return "date"
+        elif isinstance(v, dict) or isinstance(v, list):
+            return "object"
+        elif v is None:
+            return "null"
+        raise TypeError(
+            "Parameter value of type {} is not supported by Rockset".format(type(v))
+        )
+
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
 
         # Serialize all list parameters to strings.
         new_params = {}
-        for k, v in parameters.items():
-            if isinstance(v, list):
-                new_params[k] = json.dumps(v)
-            else:
-                new_params[k] = v
+        if parameters:
+            for k, v in parameters.items():
+                if isinstance(v, list):
+                    new_params[k] = json.dumps(v)
+                else:
+                    new_params[k] = v
         parameters = new_params
         
         if self._connection.debug_sql:
@@ -112,6 +137,7 @@ class Cursor(object):
                 break
             docs.append(doc)
         return docs
+        
 
     @property
     def description(self):
@@ -119,8 +145,8 @@ class Cursor(object):
             return None
 
         desc = []
-        for field in self._response_to_column_fields(self._response.column_fields):
-            name, type_ = field["name"], field["type"]
+        for field_name, field_value in self._response.results[0].items():
+            name, type_ = field_name, Cursor.__convert_to_rockset_type(field_value)
             null_ok = name != "_id" and "__id" not in name
 
             # name, type_code, display_size, internal_size, precision, scale, null_ok

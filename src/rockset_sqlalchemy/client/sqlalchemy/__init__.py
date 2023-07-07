@@ -1,3 +1,3 @@
 from .dialect import RocksetDialect
 
-__all__ = [RocksetDialect]
+__all__ = ["RocksetDialect"]

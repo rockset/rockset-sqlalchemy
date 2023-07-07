@@ -48,18 +48,24 @@ class RocksetDialect(default.DefaultDialect):
 
         return client
 
+    def create_connect_args(self, url):
+        kwargs = {
+            "api_server": "https://{}".format(url.host),
+            "api_key": url.password or url.username
+        }
+        return ([], kwargs)
+
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        return [w["name"] for w in connection.connect()._client.Workspace.list()]
+        return [w["name"] for w in connection.connect().connection._client.Workspaces.list()["data"]]
 
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
-        if schema is None:
-            schema = RocksetDialect.default_schema_name
-        return [
-            w["name"]
-            for w in connection.connect()._client.Collection.list(workspace=schema)
-        ]
+        tables = (connection.connect().connection._client.Collections.list()
+                if schema is None else 
+                connection.connect().connection._client.Collections.workspace_collections(workspace=schema))['data']
+            
+        return [w["name"] for w in tables]
 
     def _get_table_columns(self, connection, table_name, schema):
         schema = self.identifier_preparer.quote_identifier(schema)
@@ -67,7 +73,7 @@ class RocksetDialect(default.DefaultDialect):
 
         # Get a single row and determine the schema from that.
         # This assumes the whole collection has a fixed schema of course.
-        q = "SELECT * FROM {}.{} LIMIT 1".format(schema, table_name)
+        q = f"SELECT * FROM {schema}.{table_name} LIMIT 1"
         try:
             cursor = connection.connect().connection.cursor()
             cursor.execute(q)
@@ -75,34 +81,33 @@ class RocksetDialect(default.DefaultDialect):
             if not fields:
                 # Return a fake schema if the collection is empty.
                 return [("null", "null")]
-            field_type = fields[1]
-            if field_type not in type_map:
-                raise exc.SQLAlchemyError(
-                    "Query returned unsupported type {} in field {} in table {}.{}".format(
-                        field_type, fields[0], schema, table_name
+            columns = []
+            for field in fields:
+                field_type = field[1]
+                if field_type not in type_map.keys():
+                    raise exc.SQLAlchemyError(
+                        "Query returned unsupported type {} in field {} in table {}.{}".format(
+                            field_type, fields[0], schema, table_name
+                        )
                     )
+                columns.append(
+                    {
+                        "name": field[0],
+                        "type": type_map[field_type],
+                        "nullable": field[6],
+                        "default": None,
+                    }
                 )
-            return [
-                {
-                    "name": field[0],
-                    "type": field[1],
-                    "nullable": field[6],
-                    "default": None,
-                }
-                for field in fields
-            ]
         except Exception as e:
             # TODO: more graceful handling of exceptions.
             raise e
+        return columns
 
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
         if schema is None:
             schema = RocksetDialect.default_schema_name
-        columns = []
-        for column in self._get_table_columns(connection, table_name, schema):
-            columns.append(column)
-        return columns
+        return self._get_table_columns(connection, table_name, schema)
 
     @reflection.cache
     def get_view_names(self, connection, schema=None, **kw):
@@ -121,6 +126,13 @@ class RocksetDialect(default.DefaultDialect):
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         return []
+    
+    def has_table(self, connection, table_name, schema=None):
+        try:
+            self._get_table_columns(connection, table_name, schema)
+            return True
+        except exc.NoSuchTableError:
+            return False
 
     def do_rollback(self, dbapi_connection):
         # Transactions are not supported in Rockset.

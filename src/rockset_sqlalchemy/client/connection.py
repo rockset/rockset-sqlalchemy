@@ -4,12 +4,11 @@ from rockset import RocksetClient, Regions
 from .cursor import Cursor
 from .exceptions import Error, ProgrammingError
 
-
 class Connection(object):
     def __init__(self, api_server, api_key, debug_sql=False):
         self._closed = False
         self._client = RocksetClient(
-            host=api_server or Regions.use1a1, 
+            host=api_server, 
             api_key=api_key
         )
         self.debug_sql = debug_sql
@@ -27,7 +26,7 @@ class Connection(object):
         raise ProgrammingError("Connection closed")
 
     def close(self):
-        self._client.close()
+        self._client = None
         self._closed = True
 
     def rollback(self):

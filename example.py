@@ -19,7 +19,7 @@ if "ROCKSET_API_KEY" not in os.environ:
     sys.exit(1)
 
 engine = create_engine(
-    "rockset_sqlalchemy://",
+    "rockset://",
     connect_args={
         "api_server": os.environ["ROCKSET_API_SERVER"],
         "api_key": os.environ["ROCKSET_API_KEY"],
