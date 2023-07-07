@@ -38,6 +38,25 @@ class Cursor(object):
             "Parameter value of type {} is not supported by Rockset".format(type(v))
         )
 
+    @staticmethod
+    def execute_query(client, query, vi=None, query_params={}):
+        request = rockset.models.QueryRequestSql(
+            query=query,
+            parameters=[
+                rockset.models.QueryParameter(
+                    name=param, value=str(val), type=Cursor.__convert_to_rockset_type(val)
+                )
+                for param, val in query_params.items()
+            ]
+        )
+        try:
+            return client.VirtualInstances.query_virtual_instance(
+                virtual_instance_id=vi,
+                sql=request
+            ) if vi else client.Queries.query(sql=request)
+        except rockset.exceptions.RocksetException as e:
+            raise Error.map_rockset_exception(e)  
+
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
 
@@ -57,23 +76,20 @@ class Cursor(object):
             print(f"\nParameters:\n{parameters}")
             print("+++++++++++++++++++++++++++++")
 
-        if parameters:
-            if not isinstance(parameters, dict):
-                raise ProgrammingError(
-                    "Unsupported type for query parameters: expected `dict`, found {}".format(
-                        type(parameters)
-                    )
+        if parameters and not isinstance(parameters, dict):
+            raise ProgrammingError(
+                "Unsupported type for query parameters: expected `dict`, found {}".format(
+                    type(parameters)
                 )
-
-        try:
-            self._response = self._connection._client.sql(
-                query=sql,
-                params=parameters
             )
-            
-            self._response_iter = iter(self._response.results)
-        except rockset.exceptions.RocksetException as e:
-            raise Error.map_rockset_exception(e)
+
+        self._response = Cursor.execute_query(
+            self._connection._client,
+            sql, 
+            self._connection.vi,
+            query_params=parameters
+        )
+        self._response_iter = iter(self._response.results)
 
     def executemany(self, sql, all_parameters):
         for parameters in all_parameters:
@@ -167,7 +183,7 @@ class Cursor(object):
 
     def close(self):
         self._closed = True
-        self._cursor = None
+        self._response = None
 
     @property
     def rowcount(self):

@@ -51,7 +51,8 @@ class RocksetDialect(default.DefaultDialect):
     def create_connect_args(self, url):
         kwargs = {
             "api_server": "https://{}".format(url.host),
-            "api_key": url.password or url.username
+            "api_key": url.password or url.username,
+            "virtual_instance": url.database
         }
         return ([], kwargs)
 
