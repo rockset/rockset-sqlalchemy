@@ -4,8 +4,7 @@ from collections import defaultdict
 
 import sqlalchemy as sa
 from sqlalchemy import cast, create_engine, or_
-from sqlalchemy.ext import declarative
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from rockset_sqlalchemy.sqlalchemy.types import Array
 
@@ -25,8 +24,7 @@ engine = create_engine(
     },
 )
 
-Base = declarative.declarative_base(bind=engine)
-
+class Base(DeclarativeBase): pass
 
 class Person(Base):
     __tablename__ = "people"

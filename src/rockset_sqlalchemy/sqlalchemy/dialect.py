@@ -34,6 +34,7 @@ class RocksetDialect(default.DefaultDialect):
     supports_sane_rowcount = False
     supports_sane_multi_rowcount = False
     preexecute_autoincrement_sequences = False
+    supports_statement_cache = True
 
     supports_default_values = False
     supports_sequences = False
@@ -42,9 +43,15 @@ class RocksetDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
+        """Retained for backward compatibility with SQLAlchemy 1.x.
+        """
         import rockset_sqlalchemy
 
         return rockset_sqlalchemy
+    
+    @classmethod
+    def import_dbapi(cls):
+        return RocksetDialect.dbapi()
 
     def create_connect_args(self, url):
         kwargs = {

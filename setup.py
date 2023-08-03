@@ -20,7 +20,7 @@ setup(
     },
     install_requires=[
         "rockset>=1.0.0",
-        "sqlalchemy>=1.4.0,<2.0.0"
+        "sqlalchemy>=1.4.0"
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
