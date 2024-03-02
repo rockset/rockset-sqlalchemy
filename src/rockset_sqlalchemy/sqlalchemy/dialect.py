@@ -102,6 +102,8 @@ class RocksetDialect(default.DefaultDialect):
                             field_type, fields[0], schema, table_name
                         )
                     )
+                if field[0] == "_event_time":
+                    field_type = "timestamp"
                 columns.append(
                     {
                         "name": field[0],
