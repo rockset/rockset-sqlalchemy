@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="rockset-sqlalchemy",
-    version="1.0.0",
+    version="1.0.1",
     author="Rockset",
     author_email="support@rockset.com",
     keywords=["Rockset", "rockset-client"],
@@ -15,16 +15,13 @@ setup(
     entry_points={
         "sqlalchemy.dialects": [
             "rockset_sqlalchemy = rockset_sqlalchemy.sqlalchemy:RocksetDialect",
-            "rockset = rockset_sqlalchemy.sqlalchemy:RocksetDialect"
+            "rockset = rockset_sqlalchemy.sqlalchemy:RocksetDialect",
         ]
     },
-    install_requires=[
-        "rockset>=1.0.0",
-        "sqlalchemy>=1.4.0"
-    ],
+    install_requires=["rockset>=1.0.0", "sqlalchemy>=1.4.0"],
     classifiers=[
-        'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independent',
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
     ],
 )
