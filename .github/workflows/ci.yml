@@ -1,0 +1,49 @@
+---
+name: Continous integration of Rockset SQLAlchemy
+
+on:
+  pull_request:
+    branches:
+      - master
+      - main
+    types: [opened, synchronize, edited, ready_for_review]
+
+jobs:
+  ci:
+    name: build and archive
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5.0.0
+        with:
+          python-version: '3.10'
+      - name: Install pypa/build
+        run: >-
+          python3 -m
+          pip install
+          build pytest
+          --user
+      - name: Test
+        run: pytest test
+
+      - name: Build a binary wheel and a source tarball
+        run: python3 -m build
+
+      - name: Persist build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sqlalchemy_draft_wheel
+          path: |
+            dist/*.whl
+          retention-days: 2
+
+  linter:
+    name: runner / black formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose"
+          src: "./src"
+
