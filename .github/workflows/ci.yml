@@ -18,7 +18,7 @@ jobs:
         run: >-
           python3 -m
           pip install
-          build pytest sqlalchemy
+          build pytest sqlalchemy rockset
           --user
       - name: Test
         run:  if [ $(ls -1 test/*.py  |grep -v __init__.py  |wc -l) -gt 0 ]; then pytest test; else true; fi
