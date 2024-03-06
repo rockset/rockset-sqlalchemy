@@ -43,18 +43,23 @@ class Cursor(object):
             query=query,
             parameters=[
                 rockset.models.QueryParameter(
-                    name=param, value=str(val), type=Cursor.__convert_to_rockset_type(val)
+                    name=param,
+                    value=str(val),
+                    type=Cursor.__convert_to_rockset_type(val),
                 )
                 for param, val in query_params.items()
-            ]
+            ],
         )
         try:
-            return client.VirtualInstances.query_virtual_instance(
-                virtual_instance_id=vi,
-                sql=request
-            ) if vi else client.Queries.query(sql=request)
+            return (
+                client.VirtualInstances.query_virtual_instance(
+                    virtual_instance_id=vi, sql=request
+                )
+                if vi
+                else client.Queries.query(sql=request)
+            )
         except rockset.exceptions.RocksetException as e:
-            raise Error.map_rockset_exception(e)  
+            raise Error.map_rockset_exception(e)
 
     def execute(self, sql, parameters=None):
         self.__check_cursor_opened()
@@ -68,7 +73,7 @@ class Cursor(object):
                 else:
                     new_params[k] = v
         parameters = new_params
-        
+
         if self._connection.debug_sql:
             print("+++++++++++++++++++++++++++++")
             print(f"Query:\n{sql}")
@@ -83,10 +88,7 @@ class Cursor(object):
             )
 
         self._response = Cursor.execute_query(
-            self._connection._client,
-            sql, 
-            self._connection.vi,
-            query_params=parameters
+            self._connection._client, sql, self._connection.vi, query_params=parameters
         )
         self._response_iter = iter(self._response.results)
 
@@ -108,8 +110,8 @@ class Cursor(object):
             return None
 
         result = []
-        
-        for field in self._response_to_column_fields(self._response.column_fields):           
+
+        for field in self._response_to_column_fields(self._response.column_fields):
             name = field["name"]
             if name in next_doc:
                 result.append(next_doc[name])
@@ -126,7 +128,7 @@ class Cursor(object):
 
         schema = rockset.Document()
         if self._response.results and len(self._response.results) > 0:
-            # we only look at the first document because 
+            # we only look at the first document because
             # is sqlalchemy is typically used for relational
             # tables with no sparse fields
             schema.update(self._response.results[0])
@@ -152,7 +154,6 @@ class Cursor(object):
                 break
             docs.append(doc)
         return docs
-        
 
     @property
     def description(self):

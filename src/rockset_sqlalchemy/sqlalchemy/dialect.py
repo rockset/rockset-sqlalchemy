@@ -43,12 +43,11 @@ class RocksetDialect(default.DefaultDialect):
 
     @classmethod
     def dbapi(cls):
-        """Retained for backward compatibility with SQLAlchemy 1.x.
-        """
+        """Retained for backward compatibility with SQLAlchemy 1.x."""
         import rockset_sqlalchemy
 
         return rockset_sqlalchemy
-    
+
     @classmethod
     def import_dbapi(cls):
         return RocksetDialect.dbapi()
@@ -57,20 +56,27 @@ class RocksetDialect(default.DefaultDialect):
         kwargs = {
             "api_server": "https://{}".format(url.host),
             "api_key": url.password or url.username,
-            "virtual_instance": url.database
+            "virtual_instance": url.database,
         }
         return ([], kwargs)
 
     @reflection.cache
     def get_schema_names(self, connection, **kw):
-        return [w["name"] for w in connection.connect().connection._client.Workspaces.list()["data"]]
+        return [
+            w["name"]
+            for w in connection.connect().connection._client.Workspaces.list()["data"]
+        ]
 
     @reflection.cache
     def get_table_names(self, connection, schema=None, **kw):
-        tables = (connection.connect().connection._client.Collections.list()
-                if schema is None else 
-                connection.connect().connection._client.Collections.workspace_collections(workspace=schema))['data']
-            
+        tables = (
+            connection.connect().connection._client.Collections.list()
+            if schema is None
+            else connection.connect().connection._client.Collections.workspace_collections(
+                workspace=schema
+            )
+        )["data"]
+
         return [w["name"] for w in tables]
 
     def _get_table_columns(self, connection, table_name, schema):
@@ -132,7 +138,7 @@ class RocksetDialect(default.DefaultDialect):
     @reflection.cache
     def get_indexes(self, connection, table_name, schema=None, **kw):
         return []
-    
+
     def has_table(self, connection, table_name, schema=None):
         try:
             self._get_table_columns(connection, table_name, schema)
