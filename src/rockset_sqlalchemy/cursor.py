@@ -108,8 +108,9 @@ class Cursor(object):
             return None
 
         result = []
-        
-        for field in self._response_to_column_fields(self._response.column_fields):           
+
+        column_fields = getattr(self._response, "column_fields", None)
+        for field in self._response_to_column_fields(column_fields):           
             name = field["name"]
             if name in next_doc:
                 result.append(next_doc[name])
