@@ -23,7 +23,7 @@ setup(
         "sqlalchemy>=1.4.0"
     ],
     tests_require=[
-        "pytest=8.2.1"
+        "pytest>=8.2.1"
     ],
     classifiers=[
         'Programming Language :: Python :: 3',
