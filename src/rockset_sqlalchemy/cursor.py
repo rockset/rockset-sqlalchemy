@@ -162,12 +162,13 @@ class Cursor(object):
             return None
 
         desc = []
-        for field_name, field_value in self._response.results[0].items():
-            name, type_ = field_name, Cursor.__convert_to_rockset_type(field_value)
-            null_ok = name != "_id" and "__id" not in name
+        if len(self._response.results) > 0:
+            for field_name, field_value in self._response.results[0].items():
+                name, type_ = field_name, Cursor.__convert_to_rockset_type(field_value)
+                null_ok = name != "_id" and "__id" not in name
 
-            # name, type_code, display_size, internal_size, precision, scale, null_ok
-            desc.append((name, type_, None, None, None, None, null_ok))
+                # name, type_code, display_size, internal_size, precision, scale, null_ok
+                desc.append((name, type_, None, None, None, None, null_ok))
         return desc
 
     def __iter__(self):
