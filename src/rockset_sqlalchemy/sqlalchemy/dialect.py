@@ -118,6 +118,7 @@ class RocksetDialect(default.DefaultDialect):
 
     def _validate_query(self, connection: Engine, query: str):
         import rockset.models
+
         query_request_sql = rockset.models.QueryRequestSql(query=query)
         # raises rockset.exceptions.BadRequestException if DESCRIBE is invalid on this collection e.g. rollups
         connection.connect().connection._client.Queries.validate(sql=query_request_sql)
@@ -156,7 +157,9 @@ class RocksetDialect(default.DefaultDialect):
                             field_type, field_name, schema, table_name
                         )
                     )
-                nullable = False if result[0][0] == "_id" else True  # _id is the only field that's not nullable
+                nullable = (
+                    False if result[0][0] == "_id" else True
+                )  # _id is the only field that's not nullable
                 columns.append(
                     {
                         "name": field_name,
