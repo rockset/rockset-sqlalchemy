@@ -24,7 +24,10 @@ engine = create_engine(
     },
 )
 
-class Base(DeclarativeBase): pass
+
+class Base(DeclarativeBase):
+    pass
+
 
 class Person(Base):
     __tablename__ = "people"

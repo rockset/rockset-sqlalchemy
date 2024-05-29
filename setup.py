@@ -15,16 +15,14 @@ setup(
     entry_points={
         "sqlalchemy.dialects": [
             "rockset_sqlalchemy = rockset_sqlalchemy.sqlalchemy:RocksetDialect",
-            "rockset = rockset_sqlalchemy.sqlalchemy:RocksetDialect"
+            "rockset = rockset_sqlalchemy.sqlalchemy:RocksetDialect",
         ]
     },
-    install_requires=[
-        "rockset>=1.0.0",
-        "sqlalchemy>=1.4.0"
-    ],
+    install_requires=["rockset>=1.0.0", "sqlalchemy>=1.4.0"],
+    tests_require=["pytest>=8.2.1"],
     classifiers=[
-        'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independent',
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
     ],
 )

@@ -1,4 +1,6 @@
-from sqlalchemy import exc, types, util
+from typing import List, Any, Sequence
+
+from sqlalchemy import exc, types, util, Engine
 from sqlalchemy.engine import default, reflection
 from sqlalchemy.sql import compiler
 
@@ -80,6 +82,7 @@ class RocksetDialect(default.DefaultDialect):
         return [w["name"] for w in tables]
 
     def _get_table_columns(self, connection, table_name, schema):
+        """Gets table columns based on a retrieved row from the collection"""
         schema = self.identifier_preparer.quote_identifier(schema)
         table_name = self.identifier_preparer.quote_identifier(table_name)
 
@@ -87,9 +90,7 @@ class RocksetDialect(default.DefaultDialect):
         # This assumes the whole collection has a fixed schema of course.
         q = f"SELECT * FROM {schema}.{table_name} LIMIT 1"
         try:
-            cursor = connection.connect().connection.cursor()
-            cursor.execute(q)
-            fields = cursor.description
+            fields = self._exec_query_description(connection, q)
             if not fields:
                 # Return a fake schema if the collection is empty.
                 return [("null", "null")]
@@ -115,10 +116,72 @@ class RocksetDialect(default.DefaultDialect):
             raise e
         return columns
 
+    def _validate_query(self, connection: Engine, query: str):
+        import rockset.models
+
+        query_request_sql = rockset.models.QueryRequestSql(query=query)
+        # raises rockset.exceptions.BadRequestException if DESCRIBE is invalid on this collection e.g. rollups
+        connection.connect().connection._client.Queries.validate(sql=query_request_sql)
+
+    def _exec_query(self, connection: Engine, query: str) -> Sequence[Any]:
+        cursor = connection.connect().connection.cursor()
+        cursor.execute(query)
+        return cursor.fetchall()
+
+    def _exec_query_description(self, connection: Engine, query: str) -> Sequence[Any]:
+        cursor = connection.connect().connection.cursor()
+        cursor.execute(query)
+        return cursor.description
+
+    def _get_table_columns_describe(self, connection, table_name, schema, **kw):
+        """Gets table columns based on the query DESCRIBE SomeCollection"""
+        schema = self.identifier_preparer.quote_identifier(schema)
+        table_name = self.identifier_preparer.quote_identifier(table_name)
+
+        max_field_depth = kw["max_field_depth"] if "max_field_depth" in kw else 1
+        if not isinstance(max_field_depth, int):
+            raise ValueError("Query option max_field_depth, must be of type 'int'")
+
+        q = f"DESCRIBE {table_name} OPTION(max_field_depth={max_field_depth})"
+        self._validate_query(connection, q)
+
+        try:
+            results = self._exec_query(connection, q)
+            columns = list()
+            for result in results:
+                field_name = ".".join(result[0])
+                field_type = result[1]
+                if field_type not in type_map.keys():
+                    raise exc.SQLAlchemyError(
+                        "Query returned unsupported type {} in field {} in table {}.{}".format(
+                            field_type, field_name, schema, table_name
+                        )
+                    )
+                nullable = (
+                    False if result[0][0] == "_id" else True
+                )  # _id is the only field that's not nullable
+                columns.append(
+                    {
+                        "name": field_name,
+                        "type": type_map[result[1]],
+                        "nullable": nullable,
+                        "default": None,
+                    }
+                )
+        except Exception as e:
+            # TODO: more graceful handling of exceptions.
+            raise e
+        return columns
+
     @reflection.cache
     def get_columns(self, connection, table_name, schema=None, **kw):
         if schema is None:
             schema = RocksetDialect.default_schema_name
+        try:
+            return self._get_table_columns_describe(connection, table_name, schema)
+        except Exception as e:
+            # likely a rollup collection, so revert to old behavior
+            pass
         return self._get_table_columns(connection, table_name, schema)
 
     @reflection.cache
